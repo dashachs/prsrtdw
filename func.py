@@ -26,9 +26,10 @@ def open_and_parse_page(browser, link, list_of_tenders):
         except NoSuchElementException:
             parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text)
             page_count += 1
-    # print_lots(list_of_tenders)
+
     for tender in list_of_tenders:
         parse_tender_lot(browser, tender, list_of_tenders)
+    print_lots(list_of_tenders)
 
 
 def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
@@ -61,6 +62,22 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
     if "login?back" in current_url:
         authorize(browser)
         time.sleep(2)
+    temp_for_three = browser.find_element_by_xpath(
+        "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='info']").text
+    get_category_country_subject(temp_for_three, current_tender)
+
+
+def get_category_country_subject(temp_for_three, current_tender):
+    list_for_info = temp_for_three.replace("\n", ":").replace(": ", ":").split(":")
+    for i in range(len(list_for_info)):
+        if i != len(list_for_info) - 1:
+            if "Категория" in list_for_info[i]:
+                current_tender.category = list_for_info[i + 1]
+            if "Закупщик" in list_for_info[i]:
+                current_tender.subject = list_for_info[i + 1]
+            if "Страна" in list_for_info[i]:
+                current_tender.country = list_for_info[i + 1]
+    list_for_info.clear()
 
 
 def authorize(browser):
@@ -84,10 +101,11 @@ def get_number_from_url(source_url):
 
 
 def reformat_date(date):
-    date = date.replace('Опубликовано:', '').replace('Истекает:', '').replace(' ', '')
-    dayMonthYear = date.split('/')
-    date = (((((dayMonthYear[2] + '-') + dayMonthYear[1]) + '-') + dayMonthYear[0]) + ' ')
-    dayMonthYear.clear()
+    symbols = ",.-"
+    date = date.replace('Опубликовано:', '').replace('Истекает:', '').replace(' ', '').replace(symbols, "/")
+    day_month_year = date.split('/')
+    date = (((((day_month_year[2] + '-') + day_month_year[1]) + '-') + day_month_year[0]) + ' ')
+    day_month_year.clear()
     return date
 
 
@@ -100,6 +118,13 @@ def print_lots(list_of_tenders):
               "\n  source_url\n   ", tender.source_url,
               "\n  started_at\n   ", tender.started_at,
               "\n  ended_at\n   ", tender.ended_at,
+              "\n  category\n   ", tender.category,
+              "\n  country\n   ", tender.country,
+              "\n  subject\n   ", tender.subject,
+              # "\n  number\n   ", tender.number,
+              # "\n  number\n   ", tender.number,
+              # "\n  number\n   ", tender.number,
+              # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
               "\n ============================\n")
         temp_count_for_print += 1
