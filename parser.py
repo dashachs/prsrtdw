@@ -3,9 +3,8 @@ from selenium.common.exceptions import WebDriverException, TimeoutException
 from psycopg2 import OperationalError
 import psycopg2
 import time
-from natsort import natsorted
 
-import db
+# import db
 import func
 
 
@@ -23,7 +22,7 @@ def execute_parser_orders():
     browser = webdriver.Chrome('chromedriver.exe', options=options)
 
     # open tenders page and parse tenders
-    link = 'https://www.tenderweek.com/?page=1'
+    link = 'https://www.tenderweek.com/'
     func.open_and_parse_page(browser, link, list_of_lots)
 
     print("Parsed successfully")
@@ -65,19 +64,19 @@ def execute_parser_orders():
     # bidding_lots_table.clear()
 
 
-while True:
-    try:
-        execute_parser_orders()
-    except TimeoutException:
-        print("TIMEOUT_EXCEPTION")
-    except WebDriverException:
-        print("WEB_DRIVER_EXCEPTION")
-    except:
-        print("ERROR")
-    finally:
-        # setting repeating time
-        timerTime = 90
-        print("\n~~~~~~~~~~~~~~~~~~~~~\n"
-              "Parser will start again in", timerTime, "seconds"
-              "\n~~~~~~~~~~~~~~~~~~~~~\n")
-        time.sleep(timerTime)
+# while True:
+#     try:
+execute_parser_orders()
+    # except TimeoutException:
+    #     print("TIMEOUT_EXCEPTION")
+    # except WebDriverException:
+    #     print("WEB_DRIVER_EXCEPTION")
+    # except:
+    #     print("ERROR")
+    # finally:
+    #     # setting repeating time
+    #     timerTime = 90
+    #     print("\n~~~~~~~~~~~~~~~~~~~~~\n"
+    #           "Parser will start again in", timerTime, "seconds"
+    #           "\n~~~~~~~~~~~~~~~~~~~~~\n")
+    #     time.sleep(timerTime)
