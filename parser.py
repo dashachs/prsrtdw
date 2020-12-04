@@ -12,7 +12,7 @@ def execute_parser_orders():
     print("Parsing...")
 
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
+    # options.add_argument('--headless')
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     # create lot's object

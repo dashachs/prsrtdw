@@ -1,8 +1,7 @@
 import copy
+import time
 
 from selenium.common.exceptions import WebDriverException, NoSuchElementException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions
 import lot
 
 
@@ -27,7 +26,9 @@ def open_and_parse_page(browser, link, list_of_tenders):
         except NoSuchElementException:
             parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text)
             page_count += 1
-    print_lots(list_of_tenders)
+    # print_lots(list_of_tenders)
+    for tender in list_of_tenders:
+        parse_tender_lot(browser, tender, list_of_tenders)
 
 
 def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
@@ -52,6 +53,29 @@ def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
 
 def parse_tender_lot(browser, current_tender, list_of_tenders):
     browser.get(current_tender.source_url)
+    # giving time to process the redirect
+    redirect_time = 1
+    time.sleep(redirect_time)
+    current_url = browser.current_url
+    # authorizing if was redirected and pretending to wait
+    if "login?back" in current_url:
+        authorize(browser)
+        time.sleep(2)
+
+
+def authorize(browser):
+    # authorizing if was redirected and pretending to wait
+    # https://codeby.net/threads/avtorizacija-na-sajte-python.69741/
+    email_text = "jamshidartykov87@yandex.ru"
+    password_text = "tender1week7"
+    login = browser.find_element_by_xpath("//form/div[@class='form register']/div[@class='form-row']/input[@name='email']")
+    password = browser.find_element_by_xpath("//form/div[@class='form register']/div[@class='form-row']/input[@name='password']")
+    login.send_keys(email_text)
+    time.sleep(2)
+    password.send_keys(password_text)
+    time.sleep(1)
+    button = browser.find_element_by_xpath("//form/div[@class='form register']/div[@class='form-row']/button[@type='submit']")
+    button.click()
 
 
 def get_number_from_url(source_url):
