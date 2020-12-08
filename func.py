@@ -65,6 +65,15 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
     temp_for_three = browser.find_element_by_xpath(
         "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='info']").text
     get_category_country_subject(temp_for_three, current_tender)
+    try:
+        files = browser.find_elements_by_xpath(
+            "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='files']/a")
+        current_tender.attached_file = ""
+        for file in files:
+            current_tender.attached_file = current_tender.attached_file + file.get_attribute('href') + "; "
+        current_tender.attached_file = current_tender.attached_file[:-2]
+    except NoSuchElementException:
+        current_tender.attached_file = None
 
 
 def get_category_country_subject(temp_for_three, current_tender):
@@ -121,7 +130,7 @@ def print_lots(list_of_tenders):
               "\n  category\n   ", tender.category,
               "\n  country\n   ", tender.country,
               "\n  subject\n   ", tender.subject,
-              # "\n  number\n   ", tender.number,
+              "\n  attached_file\n   ", tender.attached_file,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
