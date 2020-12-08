@@ -62,9 +62,8 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
     if "login?back" in current_url:
         authorize(browser)
         time.sleep(2)
-    temp_for_three = browser.find_element_by_xpath(
-        "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='info']").text
-    get_category_country_subject(temp_for_three, current_tender)
+
+    get_category_country_subject(browser, current_tender)
     try:
         files = browser.find_elements_by_xpath(
             "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='files']/a")
@@ -74,9 +73,12 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
         current_tender.attached_file = current_tender.attached_file[:-2]
     except NoSuchElementException:
         current_tender.attached_file = None
+    # get()
 
 
-def get_category_country_subject(temp_for_three, current_tender):
+def get_category_country_subject(browser, current_tender):
+    temp_for_three = browser.find_element_by_xpath(
+        "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='info']").text
     list_for_info = temp_for_three.replace("\n", ":").replace(": ", ":").split(":")
     for i in range(len(list_for_info)):
         if i != len(list_for_info) - 1:
