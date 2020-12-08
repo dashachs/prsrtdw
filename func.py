@@ -1,4 +1,5 @@
 import copy
+import itertools
 import time
 
 from selenium.common.exceptions import WebDriverException, NoSuchElementException
@@ -73,7 +74,76 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
         current_tender.attached_file = current_tender.attached_file[:-2]
     except NoSuchElementException:
         current_tender.attached_file = None
-    # get()
+    if current_tender.attached_file.replace(' ', '') == "":
+        current_tender.attached_file = None
+    get_info(browser, current_tender)
+
+
+def get_info(browser, current_tender):
+    try:
+        current_tender.description_short = browser.find_element_by_xpath(
+            "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'приглаш')]").text
+        if len(current_tender.description_short) < 300:
+            try:
+                temp_extra_text = browser.find_element_by_xpath(
+                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'приглаш')]/following::p").text
+                if "контракт" not in temp_extra_text and "кредит" not in temp_extra_text:
+                    temp_extra_text_split = temp_extra_text.split('\n')
+                    temp_extra_text = temp_extra_text_split[0]
+                    temp_extra_text_split.clear()
+                    if len(temp_extra_text) < 600 and "дата" not in temp_extra_text.lower():
+                        current_tender.description_short += " "
+                        current_tender.description_short += temp_extra_text
+            except NoSuchElementException:
+                pass
+    except NoSuchElementException:
+        try:
+            current_tender.description_short = browser.find_element_by_xpath(
+                "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'предмет')]").text
+            if len(current_tender.description_short) < 300:
+                try:
+                    temp_extra_text = browser.find_element_by_xpath(
+                        "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'предмет')]/following::p").text
+                    if "контракт" not in temp_extra_text and "кредит" not in temp_extra_text:
+                        temp_extra_text_split = temp_extra_text.split('\n')
+                        temp_extra_text = temp_extra_text_split[0]
+                        temp_extra_text_split.clear()
+                        if len(temp_extra_text) < 600 and \
+                                "дата" not in temp_extra_text.lower() and \
+                                ("№" not in temp_extra_text.lower() or "лота" not in temp_extra_text.lower()):
+                            current_tender.description_short += " "
+                            current_tender.description_short += temp_extra_text
+                except NoSuchElementException:
+                    pass
+        except NoSuchElementException:
+            try:
+                current_tender.description_short = browser.find_element_by_xpath(
+                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'объявл')]").text
+            except NoSuchElementException:
+                try:
+                    current_tender.description_short = browser.find_element_by_xpath(
+                        "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'конкурс')]").text
+                except NoSuchElementException:
+                    try:
+                        current_tender.description_short = browser.find_element_by_xpath(
+                            "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'контракт')]").text
+                    except NoSuchElementException:
+                        try:
+                            current_tender.description_short = browser.find_element_by_xpath(
+                                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'тендер')]").text
+                        except NoSuchElementException:
+                            try:
+                                current_tender.description_short = browser.find_element_by_xpath(
+                                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'проект')]").text
+                            except NoSuchElementException:
+                                current_tender.description_short = None
+                                pass
+    if current_tender.description_short is not None:
+        current_tender.description_short = current_tender.description_short.replace('.\n', '\n').replace(';\n', '; ').replace('\n', '. ')
+        while "  " in current_tender.description_short:
+            current_tender.description_short = current_tender.description_short.replace("  ", " ")
+    else:
+        current_tender.description_short = current_tender.name
 
 
 def get_category_country_subject(browser, current_tender):
@@ -133,6 +203,9 @@ def print_lots(list_of_tenders):
               "\n  country\n   ", tender.country,
               "\n  subject\n   ", tender.subject,
               "\n  attached_file\n   ", tender.attached_file,
+              "\n  description_short\n   ", tender.description_short,
+              # "\n  number\n   ", tender.number,
+              # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
