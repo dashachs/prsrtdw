@@ -138,12 +138,18 @@ def get_info(browser, current_tender):
                             except NoSuchElementException:
                                 current_tender.description_short = None
                                 pass
+    reformat_description_short(browser, current_tender)
+
+
+def reformat_description_short(browser, current_tender):
     if current_tender.description_short is not None:
         current_tender.description_short = current_tender.description_short.replace('.\n', '\n').replace(';\n', '; ').replace('\n', '. ')
         while "  " in current_tender.description_short:
             current_tender.description_short = current_tender.description_short.replace("  ", " ")
+
     else:
         current_tender.description_short = current_tender.name
+
 
 
 def get_category_country_subject(browser, current_tender):
