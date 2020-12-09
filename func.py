@@ -80,6 +80,48 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
 
 
 def get_info(browser, current_tender):
+    get_description_short(browser, current_tender)
+    get_email(browser, current_tender)
+
+
+def get_email(browser, current_tender):
+    text = browser.find_element_by_xpath("//div[@class='content-wrapper']/div[@class='tender-full']").get_attribute('innerHTML')
+    # print('text: \n', text, "\n\n\n")
+    temp_for_split = text.split('@')
+    temp_for_email = ''
+    temp_for_letters = ''
+    if len(temp_for_split) > 1:
+        temp_for_letters = temp_for_split[0]
+        for i in range(len(temp_for_letters)):
+            num = len(temp_for_letters) - i - 1
+            if temp_for_letters[num] == ' ' or \
+                    temp_for_letters[num] == '>' or \
+                    temp_for_letters[num] == ':' or \
+                    temp_for_letters[num] == '<' or \
+                    temp_for_letters[num] == '&' or \
+                    temp_for_letters[num] == '"':
+                break
+            temp_for_email = temp_for_letters[num] + temp_for_email
+        temp_for_email += '@'
+        temp_for_letters = temp_for_split[1]
+        for i in range(len(temp_for_letters)):
+            if temp_for_letters[i] == ' ' or \
+                    temp_for_letters[i] == ',' or \
+                    temp_for_letters[i] == '>' or \
+                    temp_for_letters[i] == ';' or \
+                    temp_for_letters[i] == ':' or \
+                    temp_for_letters[i] == '<' or \
+                    temp_for_letters[i] == '&' or \
+                    temp_for_letters[i] == '"':
+                break
+            temp_for_email = temp_for_email + temp_for_letters[i]
+        if temp_for_email[-1] == '.':
+            temp_for_email = temp_for_email[:-1]
+        temp_for_split.clear()
+        current_tender.email2 = temp_for_email
+
+
+def get_description_short(browser, current_tender):
     try:
         current_tender.description_short = browser.find_element_by_xpath(
             "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'приглаш')]").text
@@ -138,12 +180,20 @@ def get_info(browser, current_tender):
                             except NoSuchElementException:
                                 current_tender.description_short = None
                                 pass
+    reformat_description_short(browser, current_tender)
+
+
+def reformat_description_short(browser, current_tender):
     if current_tender.description_short is not None:
         current_tender.description_short = current_tender.description_short.replace('.\n', '\n').replace(';\n', '; ').replace('\n', '. ')
         while "  " in current_tender.description_short:
             current_tender.description_short = current_tender.description_short.replace("  ", " ")
+
     else:
         current_tender.description_short = current_tender.name
+    if len(current_tender.description_short) > 900:
+        to_cut_string(current_tender.description_short, 900)
+
 
 
 def get_category_country_subject(browser, current_tender):
@@ -204,7 +254,7 @@ def print_lots(list_of_tenders):
               "\n  subject\n   ", tender.subject,
               "\n  attached_file\n   ", tender.attached_file,
               "\n  description_short\n   ", tender.description_short,
-              # "\n  number\n   ", tender.number,
+              "\n  email2\n   ", tender.email2,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
