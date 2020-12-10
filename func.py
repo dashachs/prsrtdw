@@ -80,12 +80,12 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
 
 
 def get_info(browser, current_tender):
-    get_description_short(browser, current_tender)
+    get_description(browser, current_tender)
     get_email(browser, current_tender)
 
 
 def get_email(browser, current_tender):
-    text = browser.find_element_by_xpath("//div[@class='content-wrapper']/div[@class='tender-full']").get_attribute('innerHTML')
+    text = browser.find_element_by_xpath("//div[@class='content-wrapper']/div[@class='tender-full']").text
     # print('text: \n', text, "\n\n\n")
     temp_for_split = text.split('@')
     temp_for_email = ''
@@ -94,25 +94,16 @@ def get_email(browser, current_tender):
         temp_for_letters = temp_for_split[0]
         for i in range(len(temp_for_letters)):
             num = len(temp_for_letters) - i - 1
-            if temp_for_letters[num] == ' ' or \
-                    temp_for_letters[num] == '>' or \
-                    temp_for_letters[num] == ':' or \
-                    temp_for_letters[num] == '<' or \
-                    temp_for_letters[num] == '&' or \
-                    temp_for_letters[num] == '"':
+            if temp_for_letters[num] == ' ' or temp_for_letters[num] == '>' or temp_for_letters[num] == ':' or \
+                    temp_for_letters[num] == '<' or temp_for_letters[num] == '&' or temp_for_letters[num] == '"':
                 break
             temp_for_email = temp_for_letters[num] + temp_for_email
         temp_for_email += '@'
         temp_for_letters = temp_for_split[1]
         for i in range(len(temp_for_letters)):
-            if temp_for_letters[i] == ' ' or \
-                    temp_for_letters[i] == ',' or \
-                    temp_for_letters[i] == '>' or \
-                    temp_for_letters[i] == ';' or \
-                    temp_for_letters[i] == ':' or \
-                    temp_for_letters[i] == '<' or \
-                    temp_for_letters[i] == '&' or \
-                    temp_for_letters[i] == '"':
+            if temp_for_letters[i] == ' ' or temp_for_letters[i] == ',' or temp_for_letters[i] == '>' or \
+                    temp_for_letters[i] == ';' or temp_for_letters[i] == ':' or temp_for_letters[i] == '<' or \
+                    temp_for_letters[i] == '&' or temp_for_letters[i] == '"':
                 break
             temp_for_email = temp_for_email + temp_for_letters[i]
         if temp_for_email[-1] == '.':
@@ -121,79 +112,22 @@ def get_email(browser, current_tender):
         current_tender.email2 = temp_for_email
 
 
-def get_description_short(browser, current_tender):
-    try:
-        current_tender.description_short = browser.find_element_by_xpath(
-            "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'приглаш')]").text
-        if len(current_tender.description_short) < 300:
-            try:
-                temp_extra_text = browser.find_element_by_xpath(
-                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'приглаш')]/following::p").text
-                if "контракт" not in temp_extra_text and "кредит" not in temp_extra_text:
-                    temp_extra_text_split = temp_extra_text.split('\n')
-                    temp_extra_text = temp_extra_text_split[0]
-                    temp_extra_text_split.clear()
-                    if len(temp_extra_text) < 600 and "дата" not in temp_extra_text.lower():
-                        current_tender.description_short += " "
-                        current_tender.description_short += temp_extra_text
-            except NoSuchElementException:
-                pass
-    except NoSuchElementException:
-        try:
-            current_tender.description_short = browser.find_element_by_xpath(
-                "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'предмет')]").text
-            if len(current_tender.description_short) < 300:
-                try:
-                    temp_extra_text = browser.find_element_by_xpath(
-                        "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'предмет')]/following::p").text
-                    if "контракт" not in temp_extra_text and "кредит" not in temp_extra_text:
-                        temp_extra_text_split = temp_extra_text.split('\n')
-                        temp_extra_text = temp_extra_text_split[0]
-                        temp_extra_text_split.clear()
-                        if len(temp_extra_text) < 600 and \
-                                "дата" not in temp_extra_text.lower() and \
-                                ("№" not in temp_extra_text.lower() or "лота" not in temp_extra_text.lower()):
-                            current_tender.description_short += " "
-                            current_tender.description_short += temp_extra_text
-                except NoSuchElementException:
-                    pass
-        except NoSuchElementException:
-            try:
-                current_tender.description_short = browser.find_element_by_xpath(
-                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'объявл')]").text
-            except NoSuchElementException:
-                try:
-                    current_tender.description_short = browser.find_element_by_xpath(
-                        "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'конкурс')]").text
-                except NoSuchElementException:
-                    try:
-                        current_tender.description_short = browser.find_element_by_xpath(
-                            "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'контракт')]").text
-                    except NoSuchElementException:
-                        try:
-                            current_tender.description_short = browser.find_element_by_xpath(
-                                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'тендер')]").text
-                        except NoSuchElementException:
-                            try:
-                                current_tender.description_short = browser.find_element_by_xpath(
-                                    "//div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='text']/p[contains(translate(text(), 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ', 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'), 'проект')]").text
-                            except NoSuchElementException:
-                                current_tender.description_short = None
-                                pass
-    reformat_description_short(browser, current_tender)
+def get_description(browser, current_tender):
+    text = browser.find_elements_by_xpath("//div[@class='tender-full']/div[@class='tender_text_tab active']/div["
+                                          "@class='text']/*")
+    res = ""
+    for i in text:
+        if i.tag_name == 'p':
+            res += i.text
+        elif i.tag_name == 'table':
+            res += str(i.get_attribute("outerHTML"))
+        res += '\n'
 
-
-def reformat_description_short(browser, current_tender):
-    if current_tender.description_short is not None:
-        current_tender.description_short = current_tender.description_short.replace('.\n', '\n').replace(';\n', '; ').replace('\n', '. ')
-        while "  " in current_tender.description_short:
-            current_tender.description_short = current_tender.description_short.replace("  ", " ")
-
+    current_tender.description_long = res
+    if len(res) >= 900:
+        current_tender.description_short = to_cut_string(res, 900)
     else:
-        current_tender.description_short = current_tender.name
-    if len(current_tender.description_short) > 900:
-        to_cut_string(current_tender.description_short, 900)
-
+        current_tender.description_short = res
 
 
 def get_category_country_subject(browser, current_tender):
@@ -216,13 +150,16 @@ def authorize(browser):
     # https://codeby.net/threads/avtorizacija-na-sajte-python.69741/
     email_text = "jamshidartykov87@yandex.ru"
     password_text = "tender1week7"
-    login = browser.find_element_by_xpath("//form/div[@class='form register']/div[@class='form-row']/input[@name='email']")
-    password = browser.find_element_by_xpath("//form/div[@class='form register']/div[@class='form-row']/input[@name='password']")
+    login = browser.find_element_by_xpath(
+        "//form/div[@class='form register']/div[@class='form-row']/input[@name='email']")
+    password = browser.find_element_by_xpath(
+        "//form/div[@class='form register']/div[@class='form-row']/input[@name='password']")
     login.send_keys(email_text)
     time.sleep(2)
     password.send_keys(password_text)
     time.sleep(1)
-    button = browser.find_element_by_xpath("//form/div[@class='form register']/div[@class='form-row']/button[@type='submit']")
+    button = browser.find_element_by_xpath(
+        "//form/div[@class='form register']/div[@class='form-row']/button[@type='submit']")
     button.click()
 
 
@@ -243,18 +180,11 @@ def reformat_date(date):
 def print_lots(list_of_tenders):
     temp_count_for_print = 1
     for tender in list_of_tenders:
-        print("#", temp_count_for_print,
-              "\n  number\n   ", tender.number,
-              "\n  name\n   ", tender.name,
-              "\n  source_url\n   ", tender.source_url,
-              "\n  started_at\n   ", tender.started_at,
-              "\n  ended_at\n   ", tender.ended_at,
-              "\n  category\n   ", tender.category,
-              "\n  country\n   ", tender.country,
-              "\n  subject\n   ", tender.subject,
-              "\n  attached_file\n   ", tender.attached_file,
-              "\n  description_short\n   ", tender.description_short,
-              "\n  email2\n   ", tender.email2,
+        print("#", temp_count_for_print, "\n  number\n   ", tender.number, "\n  name\n   ", tender.name,
+              "\n  source_url\n   ", tender.source_url, "\n  started_at\n   ", tender.started_at, "\n  ended_at\n   ",
+              tender.ended_at, "\n  category\n   ", tender.category, "\n  country\n   ", tender.country,
+              "\n  subject\n   ", tender.subject, "\n  attached_file\n   ", tender.attached_file,
+              "\n  description_short\n   ", tender.description_short, "\n  email2\n   ", tender.email2,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
