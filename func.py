@@ -129,12 +129,27 @@ def get_description(browser, current_tender):
         current_tender.description_short = to_cut_string(res, 900)
     else:
         current_tender.description_short = res
+    temp_for_phone = None
     for i in text:
         if i.tag_name == 'p':
             if "тел." in i.text.lower() or "тел:" in i.text.lower() or "телефон" in i.text.lower():
-                temp_for_itin = i.text.lower()
-                print(current_tender.source_url, "\n", temp_for_itin)
+                temp_for_phone = i.text.lower()
+                # print(current_tender.source_url, "\n", temp_for_phone)
                 break
+    if temp_for_phone is not None:
+        if "тел." in temp_for_phone:
+            temp_for_phone_split = temp_for_phone.split("тел.")
+        elif "тел:" in temp_for_phone:
+            temp_for_phone_split = temp_for_phone.split("тел:")
+        elif "телефон" in temp_for_phone:
+            temp_for_phone_split = temp_for_phone.split("телефон")
+        if len(temp_for_phone_split) > 1:
+            temp_for_phone = temp_for_phone_split[1]
+            temp_for_phone = temp_for_phone.replace('\n', '')
+            replace_values = 'abcdefghijklmnopqrstuvwxyzабвгдеёжзийклмнопрстуфхцчшщъыьэюя.,;:/@'
+            for value in replace_values:
+                temp_for_phone = temp_for_phone.replace(value, '')
+    print(current_tender.source_url, "\n", temp_for_phone)
 
 
 def get_category_country_subject(browser, current_tender):
