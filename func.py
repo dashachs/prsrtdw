@@ -137,6 +137,7 @@ def get_description(browser, current_tender):
                 # print(current_tender.source_url, "\n", temp_for_phone)
                 break
     if temp_for_phone is not None:
+        temp_for_phone_split = 0
         if "тел." in temp_for_phone:
             temp_for_phone_split = temp_for_phone.split("тел.")
         elif "тел:" in temp_for_phone:
@@ -149,7 +150,19 @@ def get_description(browser, current_tender):
             replace_values = 'abcdefghijklmnopqrstuvwxyzабвгдеёжзийклмнопрстуфхцчшщъыьэюя.,;:/@'
             for value in replace_values:
                 temp_for_phone = temp_for_phone.replace(value, '')
-    print(current_tender.source_url, "\n", temp_for_phone)
+            while "  " in temp_for_phone:
+                temp_for_phone = temp_for_phone.replace("  ", " ")
+            digits = "0123456789"
+            temp_for_phone = list(temp_for_phone)
+            for i in range(len(temp_for_phone) - 1, -1, -1):
+                if temp_for_phone[i] in digits:
+                    break
+                else:
+                    del temp_for_phone[i]
+            temp_for_phone = "".join(temp_for_phone)
+            temp_for_phone = temp_for_phone.replace(" ", "", 1)
+            temp_for_phone = (temp_for_phone, None)[temp_for_phone == ""]
+    print(current_tender.source_url, temp_for_phone, sep="\n")
 
 
 def get_category_country_subject(browser, current_tender):
@@ -202,18 +215,11 @@ def reformat_date(date):
 def print_lots(list_of_tenders):
     temp_count_for_print = 1
     for tender in list_of_tenders:
-        print("#", temp_count_for_print,
-              "\n  number\n   ", tender.number,
-              "\n  name\n   ", tender.name,
-              "\n  source_url\n   ", tender.source_url,
-              "\n  started_at\n   ", tender.started_at,
-              "\n  ended_at\n   ", tender.ended_at,
-              "\n  category\n   ", tender.category,
-              "\n  country\n   ", tender.country,
-              "\n  subject\n   ", tender.subject,
-              "\n  attached_file\n   ", tender.attached_file,
-              "\n  description_short\n   ", tender.description_short,
-              "\n  email2\n   ", tender.email2,
+        print("#", temp_count_for_print, "\n  number\n   ", tender.number, "\n  name\n   ", tender.name,
+              "\n  source_url\n   ", tender.source_url, "\n  started_at\n   ", tender.started_at, "\n  ended_at\n   ",
+              tender.ended_at, "\n  category\n   ", tender.category, "\n  country\n   ", tender.country,
+              "\n  subject\n   ", tender.subject, "\n  attached_file\n   ", tender.attached_file,
+              "\n  description_short\n   ", tender.description_short, "\n  email2\n   ", tender.email2,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
               # "\n  number\n   ", tender.number,
