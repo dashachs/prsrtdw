@@ -77,6 +77,7 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
     if current_tender.attached_file.replace(' ', '') == "":
         current_tender.attached_file = None
     get_info(browser, current_tender)
+    current_tender.type = 'tender'
 
 
 def get_info(browser, current_tender):
@@ -163,6 +164,7 @@ def get_description(browser, current_tender):
             temp_for_phone = temp_for_phone.replace(" ", "", 1)
             temp_for_phone = (temp_for_phone, None)[temp_for_phone == ""]
     print(current_tender.source_url, temp_for_phone, sep="\n")
+    current_tender.phone2 = temp_for_phone
 
 
 def get_category_country_subject(browser, current_tender):
