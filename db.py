@@ -50,7 +50,7 @@ def find_expired_lots(con):
 def add_category(con, name):
     # добавить новую категорию в таблицу и вернуть новый id
     cur = con.cursor()
-    cur.execute("SELECT id, slug FROM bidding_categories")
+    cur.execute("SELECT id, slug FROM bidding_categories ORDER BY id")
     rows = cur.fetchall()
     for row in rows:
         if row[1] == transliterate(name):
@@ -69,7 +69,7 @@ def get_category_id(con, required):
     if required.lower().replace(' ', '') == '':
         required = 'undefined'
     cur = con.cursor()
-    cur.execute("SELECT category_id, name, id FROM bidding_categories_translations")
+    cur.execute("SELECT category_id, name, id FROM bidding_categories_translations ORDER BY id")
     rows = cur.fetchall()
     for row in rows:
         if row[1].lower().replace(' ', '') == required.lower().replace(' ', ''):
@@ -88,7 +88,7 @@ def get_category_id(con, required):
 def get_source_id(con, required):
     # вернуть id источника (если нет, то добавить заранее вручную)
     cur = con.cursor()
-    cur.execute("SELECT id, url FROM bidding_sources")
+    cur.execute("SELECT id, url FROM bidding_sources ORDER BY id")
     rows = cur.fetchall()
     for row in rows:
         if row[1] in required:
@@ -98,7 +98,7 @@ def get_source_id(con, required):
 
 def add_subject(con, name, lot):
     cur = con.cursor()
-    cur.execute("SELECT id FROM bidding_subjects")
+    cur.execute("SELECT id FROM bidding_subjects ORDER BY id")
     rows = cur.fetchall()
     new_id = rows[-1][0] + 1
     cur.execute(
@@ -113,7 +113,7 @@ def add_subject(con, name, lot):
 
 def get_subject_id(con, required, lot):
     cur = con.cursor()
-    cur.execute("SELECT id, name FROM bidding_subjects")
+    cur.execute("SELECT id, name FROM bidding_subjects ORDER BY id")
     rows = cur.fetchall()
     for row in rows:
         if row[1].lower().replace(' ', '') == required.lower().replace(' ', ''):
@@ -156,7 +156,7 @@ def get_region_id(con, required):
 
 def get_area_id(con, required):
     cur = con.cursor()
-    cur.execute("SELECT id, area_id, name FROM geo_areas_translations")
+    cur.execute("SELECT area_id, name FROM geo_areas_translations")
     rows = cur.fetchall()
     scrap = required
     scrap = scrap.lower()
@@ -166,8 +166,8 @@ def get_area_id(con, required):
     scrap = scrap.replace('г.', '')
     scrap = scrap.replace('p', 'р')
     for row in rows:
-        if scrap in row[2].lower().replace(' ', ''):
-            return row[1]
+        if scrap in row[1].lower().replace(' ', ''):
+            return row[0]
     print("Area was not found:", required)
     rows.clear()
     return -1
