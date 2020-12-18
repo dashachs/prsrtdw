@@ -1,8 +1,6 @@
-import copy
-import itertools
 import time
 
-from selenium.common.exceptions import WebDriverException, NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException
 import lot
 
 
@@ -13,7 +11,9 @@ def to_cut_string(text, length=255):
             return text
 
 
-def open_and_parse_page(browser, link, list_of_tenders):
+def open_and_parse_main_page(browser, link, list_of_elements):
+    if "login" in browser.current_url:
+        authorize(browser)
     page_text = "?page="
     page_count = 1
     # parsing from each page until next page is empty
@@ -25,24 +25,22 @@ def open_and_parse_page(browser, link, list_of_tenders):
             browser.find_element_by_xpath("//*[contains(text(), 'По данному запросу результатов нет')]")
             break
         except NoSuchElementException:
-            parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text)
+            parse_tenders_from_page(browser, list_of_elements, temp_for_link_text)
             page_count += 1
-
-    for tender in list_of_tenders:
-        parse_tender_lot(browser, tender, list_of_tenders)
-    print_lots(list_of_tenders)
 
 
 def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
     # parsing from page
     browser.get(temp_for_link_text)
-    number_of_tenders = len(browser.find_elements_by_xpath("//div[@class='short-item col-sm-100']"))
+    # number_of_tenders = len(browser.find_elements_by_xpath("//div[@class='short-item col-sm-100']"))
     list_of_names = browser.find_elements_by_xpath(
         "//div[@class='short-item col-sm-100']/div[@class='col-md-70 col-sm-100']/h3/a")
     list_of_start_dates = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 col-sm-offset-20']/div[contains(text(), 'Опубликовано')]")
+        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
+        "col-sm-offset-20']/div[contains(text(), 'Опубликовано')]")
     list_of_end_dates = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 col-sm-offset-20']/div[contains(text(), 'Истекает')]")
+        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
+        "col-sm-offset-20']/div[contains(text(), 'Истекает')]")
     for i in range(len(list_of_names)):
         size = len(list_of_tenders)
         list_of_tenders.append(lot.Lot())
@@ -53,7 +51,7 @@ def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
         list_of_tenders[size].ended_at = reformat_date(list_of_end_dates[i].text)
 
 
-def parse_tender_lot(browser, current_tender, list_of_tenders):
+def parse_tender_lot(browser, current_tender):
     browser.get(current_tender.source_url)
     # giving time to process the redirect
     redirect_time = 1
@@ -67,7 +65,8 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
     get_category_country_subject(browser, current_tender)
     try:
         files = browser.find_elements_by_xpath(
-            "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='files']/a")
+            "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']/div["
+            "@class='files']/a")
         current_tender.attached_file = ""
         for file in files:
             current_tender.attached_file = current_tender.attached_file + file.get_attribute('href') + "; "
@@ -90,7 +89,7 @@ def get_email(browser, current_tender):
     # print('text: \n', text, "\n\n\n")
     temp_for_split = text.split('@')
     temp_for_email = ''
-    temp_for_letters = ''
+    # temp_for_letters = ''
     if len(temp_for_split) > 1:
         temp_for_letters = temp_for_split[0]
         for i in range(len(temp_for_letters)):
