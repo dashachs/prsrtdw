@@ -11,23 +11,25 @@ def to_cut_string(text, length=255):
             return text
 
 
-def open_and_parse_main_page(browser, link, list_of_elements):
+def open_and_parse_main_page_of_buyers(browser, link, list_of_buyers):
+    browser.get(link)
     if "login" in browser.current_url:
         authorize(browser)
     page_text = "?page="
     page_count = 1
     # parsing from each page until next page is empty
     while True:
-        temp_for_link_text = link + page_text + str(page_count)
-        browser.get(temp_for_link_text)
+        link_of_page = link + page_text + str(page_count)
+        browser.get(link_of_page)
         # checking if it's empty page
-        try:
-            browser.find_element_by_xpath("//*[contains(text(), 'По данному запросу результатов нет')]")
+        buyers = browser.find_elements_by_xpath("//div[@class='short-buyer row']/div/h3/a[1]")
+        if len(buyers) == 0:
             break
-        except NoSuchElementException:
-            parse_tenders_from_page(browser, list_of_elements, temp_for_link_text)
-            page_count += 1
-
+        # transform
+        for i in range(len(buyers)):
+            buyers[i] = dict(name=buyers[i].text, link=buyers[i].get_attribute('href'))
+        list_of_buyers.extend(buyers)
+        page_count += 1
 
 def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
     # parsing from page

@@ -12,7 +12,7 @@ def execute_parser_orders():
     print("Parsing...")
 
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
+    # options.add_argument('--headless')
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
     # create lot's object
@@ -25,7 +25,7 @@ def execute_parser_orders():
     link_of_buyers = 'https://www.tenderweek.com/company/buyers/'
     list_of_buyers = []
 
-    func.open_and_parse_main_page(browser, link_of_buyers, list_of_buyers)
+    func.open_and_parse_main_page_of_buyers(browser, link_of_buyers, list_of_buyers)
 
     # open tenders page and parse tenders
     # link = 'https://www.tenderweek.com/'
