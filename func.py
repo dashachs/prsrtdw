@@ -31,6 +31,23 @@ def open_and_parse_main_page_of_buyers(browser, link, list_of_buyers):
         list_of_buyers.extend(buyers)
         page_count += 1
 
+
+def parse_buyer_from_page(browser, buyer):
+    browser.get(buyer['link'])
+    info = browser.find_elements_by_xpath("//div[@class='row company-info']/div/*")
+    info = [i.text for i in info]
+    info = info[-1].replace('\n\n', '\n').split('\n')
+    info = [i.split(':') for i in info]
+    info = [i[-1].strip() for i in info]
+    buyer['email'] = info[0]
+    buyer['phone'] = info[1]
+    buyer['fax'] = info[2]
+    buyer['site'] = info[3]
+    buyer['address'] = info[4]
+    buyer['country'] = info[5]
+    return buyer
+
+
 def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
     # parsing from page
     browser.get(temp_for_link_text)
