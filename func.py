@@ -1,5 +1,4 @@
 import time
-
 from selenium.common.exceptions import NoSuchElementException
 import lot
 
@@ -48,26 +47,33 @@ def parse_buyer_from_page(browser, buyer):
     return buyer
 
 
-def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
-    # parsing from page
-    browser.get(temp_for_link_text)
-    # number_of_tenders = len(browser.find_elements_by_xpath("//div[@class='short-item col-sm-100']"))
-    list_of_names = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='col-md-70 col-sm-100']/h3/a")
-    list_of_start_dates = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
-        "col-sm-offset-20']/div[contains(text(), 'Опубликовано')]")
-    list_of_end_dates = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
-        "col-sm-offset-20']/div[contains(text(), 'Истекает')]")
-    for i in range(len(list_of_names)):
-        size = len(list_of_tenders)
-        list_of_tenders.append(lot.Lot())
-        list_of_tenders[size].name = list_of_names[i].text
-        list_of_tenders[size].source_url = list_of_names[i].get_attribute('href')
-        list_of_tenders[size].number = get_number_from_url(list_of_tenders[size].source_url)
-        list_of_tenders[size].started_at = reformat_date(list_of_start_dates[i].text)
-        list_of_tenders[size].ended_at = reformat_date(list_of_end_dates[i].text)
+def open_and_parse_main_page_of_lots(browser, link, list_of_lots):
+    page_text = "?page="
+    page_count = 1
+    # parsing from each page until next page is empty
+    while True:
+        link_of_page = link + page_text + str(page_count)
+        browser.get(link_of_page)
+        # number_of_tenders = len(browser.find_elements_by_xpath("//div[@class='short-item col-sm-100']"))
+        list_of_names = browser.find_elements_by_xpath(
+            "//div[@class='short-item col-sm-100']/div[@class='col-md-70 col-sm-100']/h3/a")
+        list_of_start_dates = browser.find_elements_by_xpath(
+            "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
+            "col-sm-offset-20']/div[contains(text(), 'Опубликовано')]")
+        list_of_end_dates = browser.find_elements_by_xpath(
+            "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
+            "col-sm-offset-20']/div[contains(text(), 'Истекает')]")
+        if len(list_of_names) == 0:
+            break
+        for i in range(len(list_of_names)):
+            size = len(list_of_lots)
+            list_of_lots.append(lot.Lot())
+            list_of_lots[size].name = list_of_names[i].text.strip()
+            list_of_lots[size].source_url = list_of_names[i].get_attribute('href').strip()
+            list_of_lots[size].number = get_number_from_url(list_of_lots[size].source_url).strip()
+            list_of_lots[size].started_at = reformat_date(list_of_start_dates[i].text).strip()
+            list_of_lots[size].ended_at = reformat_date(list_of_end_dates[i].text).strip()
+        page_count += 1
 
 
 def parse_tender_lot(browser, current_tender):

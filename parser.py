@@ -12,11 +12,9 @@ def execute_parser_orders():
     print("Parsing...")
 
     options = webdriver.ChromeOptions()
-    options.add_argument('--headless')
+    # options.add_argument('--headless')
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-    # create lot's object
-    # list_of_lots = []
 
     # start chrome browser
     browser = webdriver.Chrome('chromedriver.exe', options=options)
@@ -25,14 +23,17 @@ def execute_parser_orders():
     link_of_buyers_main_page = 'https://www.tenderweek.com/company/buyers/'
     list_of_buyers = []
 
-    func.open_and_parse_main_page_of_buyers(browser, link_of_buyers_main_page, list_of_buyers)
-    list_of_buyers = [func.parse_buyer_from_page(browser, buyer) for buyer in list_of_buyers]
+    # print("Collecting information about buyers")
+    # func.open_and_parse_main_page_of_buyers(browser, link_of_buyers_main_page, list_of_buyers)
+    # list_of_buyers = [func.parse_buyer_from_page(browser, buyer) for buyer in list_of_buyers]
 
-    # open tenders page and parse tenders
-    # link = 'https://www.tenderweek.com/'
-    # func.open_and_parse_page(browser, link, list_of_lots)
+    # open tenders page and parse tender
+    print("Collecting information about lots")
+    link = 'https://www.tenderweek.com/'
+    list_of_lots = []
+    func.open_and_parse_main_page_of_lots(browser, link, list_of_lots)
+    func.print_lots(list_of_lots)
 
-    # print("Parsed successfully")
     # close browser
     browser.quit()
 
@@ -46,6 +47,15 @@ def execute_parser_orders():
     #     else:
     #         print("Database was opened successfully")
     #         break
+    #
+    #
+    #
+    # close DB
+    # con.close()
+
+
+    # print("Parsed successfully")
+
     #
     # db.get_for_everything(con, list_of_lots)
     # bidding_lots_table = db.get_bidding_lots_table(con)
@@ -63,8 +73,6 @@ def execute_parser_orders():
 
     # print("Database is up-to-date")
 
-    # close DB
-    # con.close()
 
     # clear list of lots
     # list_of_lots.clear()
