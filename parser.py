@@ -32,31 +32,30 @@ def execute_parser_orders():
     link = 'https://www.tenderweek.com/'
     list_of_lots = []
     func.open_and_parse_main_page_of_lots(browser, link, list_of_lots)
-    func.print_lots(list_of_lots)
+    for i in range(len(list_of_lots)):
+        func.parse_tender_lot(browser, list_of_lots[i])
 
+    print("Parsed successfully")
     # close browser
     browser.quit()
 
+    func.merge_lots_and_buyers(list_of_lots, list_of_buyers)
+
     # database input
-    # while True:
-    #     try:
-    #         con = psycopg2.connect(database="tenderbox_test", user="denis", password="denis", host="84.54.118.76",
-    #                                port="5432")
-    #     except OperationalError:
-    #         print("Failed to connect to the server. connection...")
-    #     else:
-    #         print("Database was opened successfully")
-    #         break
-    #
-    #
-    #
+    while True:
+        try:
+            con = psycopg2.connect(database="tenderbox_test", user="denis", password="denis", host="84.54.118.76",
+                                   port="5432")
+        except OperationalError:
+            print("Failed to connect to the server. connection...")
+        else:
+            print("Database was opened successfully")
+            break
+
     # close DB
-    # con.close()
+    con.close()
 
 
-    # print("Parsed successfully")
-
-    #
     # db.get_for_everything(con, list_of_lots)
     # bidding_lots_table = db.get_bidding_lots_table(con)
 
