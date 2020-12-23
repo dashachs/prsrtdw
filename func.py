@@ -88,18 +88,7 @@ def parse_tender_lot(browser, current_tender):
         time.sleep(2)
 
     get_category_country_subject(browser, current_tender)
-    try:
-        files = browser.find_elements_by_xpath(
-            "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']/div["
-            "@class='files']/a")
-        current_tender.attached_file = ""
-        for file in files:
-            current_tender.attached_file = current_tender.attached_file + file.get_attribute('href') + "; "
-        current_tender.attached_file = current_tender.attached_file[:-2]
-    except NoSuchElementException:
-        current_tender.attached_file = None
-    if current_tender.attached_file.replace(' ', '') == "":
-        current_tender.attached_file = None
+    get_attached_files(browser, current_tender)
     get_description(browser, current_tender)
     get_email(browser, current_tender)
     get_phone(browser, current_tender)
@@ -121,6 +110,21 @@ def get_description(browser, current_tender):
         if i.tag_name == 'p':
             current_tender.description_short = i.text
             break
+
+
+def get_attached_files(browser, current_tender):
+    hrefs = browser.find_elements_by_xpath(
+        "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']//a")
+    hrefs = [i.get_attribute('href') for i in hrefs]
+    hrefs = list(set(hrefs))
+    for i in range(len(hrefs) - 1, -1, -1):
+        if 'mailto' in hrefs[i] or '@' in hrefs[i]:
+            del hrefs[i]
+    if len(hrefs) == 0:
+        current_tender.attached_file = None
+    else:
+        hrefs = ' '.join(hrefs)
+        current_tender.attached_file = hrefs
 
 
 def get_email(browser, current_tender):
@@ -256,16 +260,16 @@ def reformat_date(date):
     day_month_year.clear()
     return date
 
+
 def merge_lots_and_buyers(list_of_lots, list_of_buyers):
     for i in range(len(list_of_lots)):
         for buyer in list_of_buyers:
             if list_of_lots[i].subject == buyer['name']:
                 list_of_lots[i].phone = buyer['phone']
                 list_of_lots[i].email = buyer['email']
-                list_of_lots[i].email = buyer['site']
+                list_of_lots[i].website = buyer['site']
                 list_of_lots[i].subject_address = buyer['address']
                 break
-
 
 
 def print_lots(list_of_tenders):
@@ -275,10 +279,11 @@ def print_lots(list_of_tenders):
               "\n  source_url\n   ", tender.source_url, "\n  started_at\n   ", tender.started_at, "\n  ended_at\n   ",
               tender.ended_at, "\n  category\n   ", tender.category, "\n  country\n   ", tender.country,
               "\n  subject\n   ", tender.subject, "\n  attached_file\n   ", tender.attached_file,
-              "\n  description_short\n   ", tender.description_short, "\n  email2\n   ", tender.email2,
-              "\n  phone2\n   ", tender.phone2,  # "\n  number\n   ", tender.number,
-              # "\n  number\n   ", tender.number,
-              # "\n  number\n   ", tender.number,
+              "\n  description_short\n   ", tender.description_short, "\n  email\n   ", tender.email, "\n  email2\n   ",
+              tender.email2, "\n  phone\n   ", tender.phone, "\n  phone2\n   ", tender.phone2, "\n  site\n   ",
+              tender.website, "\n  address\n   ",
+              tender.subject_address,
+
               # "\n  number\n   ", tender.number,
               "\n ============================\n")
         temp_count_for_print += 1
