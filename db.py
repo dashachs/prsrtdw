@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 def transliterate(name):
     # Слоаврь с заменами
     dictionary = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i',
@@ -21,7 +24,7 @@ def get_bidding_lots_table(con):
     cur = con.cursor()
     cur.execute("SELECT number, source_url FROM bidding_lots")
     bidding_lots_table = cur.fetchall()
-    print("bidding_lots_table = ", len(bidding_lots_table))
+    # print("bidding_lots_table =", len(bidding_lots_table))
     # bidding_lots_table_1 = clear_bidding_lots_table(bidding_lots_table)
     # print("bidding_lots_table_1 = ", len(bidding_lots_table_1))
     return bidding_lots_table
@@ -104,19 +107,41 @@ def add_subject(con, name, lot):
     cur.execute(
         "INSERT INTO bidding_subjects(id, name, itin, address, phone, bank_account, website, image, created_at, "
         "updated_at, country_id, responsible_person, phone2, email) "
-        "VALUES (%s, %s, %s, %s, %s, %s, null, null, now(), now(), %s, null, %s, %s)", (
-            new_id, name, lot.itin, lot.subject_address, lot.phone, lot.bank_account, lot.country_id, lot.phone2,
-            lot.email))
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, null, now(), now(), %s, null, %s, %s)", (
+            new_id, name, lot.itin, lot.subject_address, lot.phone, lot.bank_account, lot.website, lot.country_id,
+            lot.phone2, lot.email))
     con.commit()
+    print("new id of subject", new_id)
     return new_id
+
+
+def update_subject(con, row, lot):
+    cur = con.cursor()
+    lot_dict = lot.__dict__
+    columns = ('id', 'name', 'itin', 'address', 'phone', 'bank_account', 'website', 'image', 'created_at', 'updated_at',
+               'country_id', 'responsible_person, phone2', 'email2', 'email')
+    new = dict(zip(columns, row))
+    new.update(dict(update_at=datetime.now()))
+    for i in new:
+        if i in lot_dict and i != 'name':
+            if lot_dict[i] is not None:
+                new[i] = lot_dict[i]
+                cur.execute(f"UPDATE bidding_subjects SET {i} = %s WHERE id=%s", (new[i], row[0]))
+                con.commit()
+    cur.execute("UPDATE bidding_subjects SET updated_at = %s WHERE id=%s", (new['updated_at'], row[0]))
+    print("updated subject:", row[0])
+
+
 
 
 def get_subject_id(con, required, lot):
     cur = con.cursor()
-    cur.execute("SELECT id, name FROM bidding_subjects ORDER BY id")
+    cur.execute("SELECT id, name, itin, address, phone, bank_account, website, image, created_at, updated_at, "
+                "country_id, responsible_person, phone2, email2, email FROM bidding_subjects ORDER BY id")
     rows = cur.fetchall()
     for row in rows:
         if row[1].lower().replace(' ', '') == required.lower().replace(' ', ''):
+            update_subject(con, row, lot)
             return row[0]
     print("subject was not found:", required)
     subject_id = add_subject(con, required, lot)
