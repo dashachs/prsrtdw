@@ -38,6 +38,9 @@ def parse_buyer_from_page(browser, buyer):
     info = info[-1].replace('\n\n', '\n').split('\n')
     info = [i.split(':') for i in info]
     info = [i[-1].strip() for i in info]
+    for i in range(len(info)):
+        if info[i] == '':
+            info[i] = None
     buyer['email'] = info[0]
     buyer['phone'] = info[1]
     buyer['fax'] = info[2]
@@ -281,8 +284,7 @@ def print_lots(list_of_tenders):
               "\n  subject\n   ", tender.subject, "\n  attached_file\n   ", tender.attached_file,
               "\n  description_short\n   ", tender.description_short, "\n  email\n   ", tender.email, "\n  email2\n   ",
               tender.email2, "\n  phone\n   ", tender.phone, "\n  phone2\n   ", tender.phone2, "\n  site\n   ",
-              tender.website, "\n  address\n   ",
-              tender.subject_address,
+              tender.website, "\n  address\n   ", tender.subject_address,
 
               # "\n  number\n   ", tender.number,
               "\n ============================\n")

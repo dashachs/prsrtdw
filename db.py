@@ -118,20 +118,19 @@ def add_subject(con, name, lot):
 def update_subject(con, row, lot):
     cur = con.cursor()
     lot_dict = lot.__dict__
-    columns = ('id', 'name', 'itin', 'address', 'phone', 'bank_account', 'website', 'image', 'created_at', 'updated_at',
-               'country_id', 'responsible_person, phone2', 'email2', 'email')
+    lot_dict['address'] = lot_dict.pop('subject_address')
+    columns = ('id', 'name', 'itin', 'address', 'phone', 'bank_account', 'website', 'image', 'created_at',
+               'updated_at', 'country_id', 'responsible_person, phone2', 'email2', 'email')
     new = dict(zip(columns, row))
     new.update(dict(update_at=datetime.now()))
     for i in new:
-        if i in lot_dict and i != 'name':
+        if i in lot_dict and (i != 'name' and i != 'created_at'):
             if lot_dict[i] is not None:
                 new[i] = lot_dict[i]
                 cur.execute(f"UPDATE bidding_subjects SET {i} = %s WHERE id=%s", (new[i], row[0]))
                 con.commit()
     cur.execute("UPDATE bidding_subjects SET updated_at = %s WHERE id=%s", (new['updated_at'], row[0]))
     print("updated subject:", row[0])
-
-
 
 
 def get_subject_id(con, required, lot):
