@@ -57,13 +57,15 @@ def execute_parser_orders():
     # sorting lots
     list_of_lots = natsorted(list_of_lots, key=lambda lot: lot.number)
 
-    # # adding to DB
-    # for lot in list_of_lots:
-    #     if not db.in_table(lot.number, lot.source_url, bidding_lots_table):
-    #         db.save_lot(con, lot)
-    #
-    # # find expired lots
-    # db.find_expired_lots(con)
+    # adding to DB
+    for lot in list_of_lots:
+        if not db.in_table(lot.number, lot.source_url, bidding_lots_table):
+            db.save_lot(con, lot)
+        else:
+            db.update_lot(con, lot)
+
+    # find expired lots
+    db.find_expired_lots(con)
 
     print("Database is up-to-date")
 
