@@ -272,7 +272,6 @@ def merge_lots_and_buyers(list_of_lots, list_of_buyers):
                 list_of_lots[i].email = buyer['email']
                 list_of_lots[i].website = buyer['site']
                 list_of_lots[i].subject_address = buyer['address']
-                break
 
 
 def print_lots(list_of_tenders):

@@ -271,9 +271,9 @@ def update_lot(con, lot):
     cur.execute("SELECT id FROM bidding_lots WHERE number=%s AND source_id=%s", (lot.number, lot.source_id))
     lot_id = cur.fetchone()[0]
     cur.execute("UPDATE bidding_lots SET type = %s, category_id = %s, source_url = %s, started_at = %s, "
-                "ended_at = %s, updated_at = %s, country_id = %s WHERE id=%s", (
+                "ended_at = %s, updated_at = %s, country_id = %s, subject_id = %s WHERE id=%s", (
                     lot.type, lot.category_id, lot.source_url, lot.started_at, lot.ended_at, lot.updated_at,
-                    lot.country_id, lot_id))
+                    lot.country_id, lot.subject_id, lot_id))
     con.commit()
     cur.execute("UPDATE bidding_lots_translations SET description_short = %s, description_long = %s WHERE lot_id = "
                 "%s", (lot.description_short, lot.description_long, lot_id))
