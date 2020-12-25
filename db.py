@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 def transliterate(name):
     # Слоаврь с заменами
     dictionary = {'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e', 'ж': 'zh', 'з': 'z', 'и': 'i',
@@ -21,7 +24,7 @@ def get_bidding_lots_table(con):
     cur = con.cursor()
     cur.execute("SELECT number, source_url FROM bidding_lots")
     bidding_lots_table = cur.fetchall()
-    print("bidding_lots_table = ", len(bidding_lots_table))
+    # print("bidding_lots_table =", len(bidding_lots_table))
     # bidding_lots_table_1 = clear_bidding_lots_table(bidding_lots_table)
     # print("bidding_lots_table_1 = ", len(bidding_lots_table_1))
     return bidding_lots_table
@@ -104,19 +107,39 @@ def add_subject(con, name, lot):
     cur.execute(
         "INSERT INTO bidding_subjects(id, name, itin, address, phone, bank_account, website, image, created_at, "
         "updated_at, country_id, responsible_person, phone2, email) "
-        "VALUES (%s, %s, %s, %s, %s, %s, null, null, now(), now(), %s, null, %s, %s)", (
-            new_id, name, lot.itin, lot.subject_address, lot.phone, lot.bank_account, lot.country_id, lot.phone2,
-            lot.email))
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, null, now(), now(), %s, null, %s, %s)", (
+            new_id, name, lot.itin, lot.subject_address, lot.phone, lot.bank_account, lot.website, lot.country_id,
+            lot.phone2, lot.email))
     con.commit()
     return new_id
 
 
+def update_subject(con, row, lot):
+    cur = con.cursor()
+    lot_dict = lot.__dict__
+    lot_dict['address'] = lot_dict.pop('subject_address')
+    columns = ('id', 'name', 'itin', 'address', 'phone', 'bank_account', 'website', 'image', 'created_at', 'updated_at',
+               'country_id', 'responsible_person, phone2', 'email2', 'email')
+    new = dict(zip(columns, row))
+    new.update(dict(update_at=datetime.now()))
+    for i in new:
+        if i in lot_dict and (i != 'name' and i != 'created_at'):
+            if lot_dict[i] is not None:
+                new[i] = lot_dict[i]
+                cur.execute(f"UPDATE bidding_subjects SET {i} = %s WHERE id=%s", (new[i], row[0]))
+                con.commit()
+    cur.execute("UPDATE bidding_subjects SET updated_at = %s WHERE id=%s", (new['updated_at'], row[0]))
+    con.commit()
+
+
 def get_subject_id(con, required, lot):
     cur = con.cursor()
-    cur.execute("SELECT id, name FROM bidding_subjects ORDER BY id")
+    cur.execute("SELECT id, name, itin, address, phone, bank_account, website, image, created_at, updated_at, "
+                "country_id, responsible_person, phone2, email2, email FROM bidding_subjects ORDER BY id")
     rows = cur.fetchall()
     for row in rows:
         if row[1].lower().replace(' ', '') == required.lower().replace(' ', ''):
+            update_subject(con, row, lot)
             return row[0]
     print("subject was not found:", required)
     subject_id = add_subject(con, required, lot)
@@ -199,8 +222,10 @@ def save_lot_in_bidding_lots(con, lot):
     new_id = get_id_from_bidding_lots(con)
     cur.execute("INSERT INTO bidding_lots(id, type, number, category_id, source_url, advance_amount, "
                 "advance_payment_days, "
-                "remains_payment_days, deposit_amount, started_at, ended_at, status, is_visible, is_approved, created_at, "
-                "updated_at, subject_id, winner_id, source_id, country_id, region_id, area_id, price, currency_id, parent_id,"
+                "remains_payment_days, deposit_amount, started_at, ended_at, status, is_visible, is_approved, "
+                "created_at, "
+                "updated_at, subject_id, winner_id, source_id, country_id, region_id, area_id, price, currency_id, "
+                "parent_id, "
                 "closed_at, views, transaction_number, transaction_sum, price_lowest, participants, quantity) "
                 "VALUES (%s, %s, %s, %s, %s, null, null, null, null, %s, %s, %s, true, true, now(), now(), %s, null, "
                 "%s, %s, "
@@ -239,3 +264,17 @@ def save_lot_in_bidding_lots_translations(con, lot):
 
 def save_lot(con, lot):
     save_lot_in_bidding_lots_translations(con, lot)
+
+
+def update_lot(con, lot):
+    cur = con.cursor()
+    cur.execute("SELECT id FROM bidding_lots WHERE number=%s AND source_id=%s", (lot.number, lot.source_id))
+    lot_id = cur.fetchone()[0]
+    cur.execute("UPDATE bidding_lots SET type = %s, category_id = %s, source_url = %s, started_at = %s, "
+                "ended_at = %s, updated_at = %s, country_id = %s, subject_id = %s WHERE id=%s", (
+                    lot.type, lot.category_id, lot.source_url, lot.started_at, lot.ended_at, lot.updated_at,
+                    lot.country_id, lot.subject_id, lot_id))
+    con.commit()
+    cur.execute("UPDATE bidding_lots_translations SET description_short = %s, description_long = %s WHERE lot_id = "
+                "%s", (lot.description_short, lot.description_long, lot_id))
+    con.commit()

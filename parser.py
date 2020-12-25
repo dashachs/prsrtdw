@@ -15,19 +15,30 @@ def execute_parser_orders():
     options.add_argument('--headless')
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
 
-    # create lot's object
-    list_of_lots = []
-
     # start chrome browser
     browser = webdriver.Chrome('chromedriver.exe', options=options)
 
-    # open tenders page and parse tenders
+    # open tenderweek's buyers
+    link_of_buyers_main_page = 'https://www.tenderweek.com/company/buyers/'
+    list_of_buyers = []
+
+    print("Collecting information about buyers")
+    func.open_and_parse_main_page_of_buyers(browser, link_of_buyers_main_page, list_of_buyers)
+    list_of_buyers = [func.parse_buyer_from_page(browser, buyer) for buyer in list_of_buyers]
+
+    # open tenders page and parse tender
+    print("Collecting information about lots")
     link = 'https://www.tenderweek.com/'
-    func.open_and_parse_page(browser, link, list_of_lots)
+    list_of_lots = []
+    func.open_and_parse_main_page_of_lots(browser, link, list_of_lots)
+    for i in range(len(list_of_lots)):
+        func.parse_tender_lot(browser, list_of_lots[i])
 
     print("Parsed successfully")
     # close browser
     browser.quit()
+
+    func.merge_lots_and_buyers(list_of_lots, list_of_buyers)
 
     # database input
     while True:
@@ -50,33 +61,36 @@ def execute_parser_orders():
     for lot in list_of_lots:
         if not db.in_table(lot.number, lot.source_url, bidding_lots_table):
             db.save_lot(con, lot)
+        else:
+            db.update_lot(con, lot)
 
     # find expired lots
     db.find_expired_lots(con)
 
     print("Database is up-to-date")
 
-    # close DB
-    con.close()
-
     # clear list of lots
     list_of_lots.clear()
     bidding_lots_table.clear()
 
+    # close DB
+    con.close()
+
+
+
 
 # while True:
 #     try:
-execute_parser_orders()
-#     except TimeoutException:
+execute_parser_orders()  # except TimeoutException:
 #         print("TIMEOUT_EXCEPTION")
 #     except WebDriverException:
 #         print("WEB_DRIVER_EXCEPTION")
 #     except:
 #         print("ERROR")
 #     finally:
-        # # setting repeating time
-        # timerTime = 90
-        # print("\n~~~~~~~~~~~~~~~~~~~~~\n"
-        #       "Parser will start again in", timerTime, "seconds"
-        #                                                "\n~~~~~~~~~~~~~~~~~~~~~\n")
-        # time.sleep(timerTime)
+# # setting repeating time
+# timerTime = 90
+# print("\n~~~~~~~~~~~~~~~~~~~~~\n"
+#       "Parser will start again in", timerTime, "seconds"
+#                                                "\n~~~~~~~~~~~~~~~~~~~~~\n")
+# time.sleep(timerTime)

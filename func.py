@@ -1,8 +1,5 @@
-import copy
-import itertools
 import time
-
-from selenium.common.exceptions import WebDriverException, NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException
 import lot
 
 
@@ -13,47 +10,76 @@ def to_cut_string(text, length=255):
             return text
 
 
-def open_and_parse_page(browser, link, list_of_tenders):
+def open_and_parse_main_page_of_buyers(browser, link, list_of_buyers):
+    browser.get(link)
+    if "login" in browser.current_url:
+        authorize(browser)
     page_text = "?page="
     page_count = 1
     # parsing from each page until next page is empty
     while True:
-        temp_for_link_text = link + page_text + str(page_count)
-        browser.get(temp_for_link_text)
+        link_of_page = link + page_text + str(page_count)
+        browser.get(link_of_page)
         # checking if it's empty page
-        try:
-            browser.find_element_by_xpath("//*[contains(text(), 'По данному запросу результатов нет')]")
+        buyers = browser.find_elements_by_xpath("//div[@class='short-buyer row']/div/h3/a[1]")
+        if len(buyers) == 0:
             break
-        except NoSuchElementException:
-            parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text)
-            page_count += 1
-
-    for tender in list_of_tenders:
-        parse_tender_lot(browser, tender, list_of_tenders)
-    print_lots(list_of_tenders)
+        # transform
+        for i in range(len(buyers)):
+            buyers[i] = dict(name=buyers[i].text.strip(), link=buyers[i].get_attribute('href'))
+        list_of_buyers.extend(buyers)
+        page_count += 1
 
 
-def parse_tenders_from_page(browser, list_of_tenders, temp_for_link_text):
-    # parsing from page
-    browser.get(temp_for_link_text)
-    number_of_tenders = len(browser.find_elements_by_xpath("//div[@class='short-item col-sm-100']"))
-    list_of_names = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='col-md-70 col-sm-100']/h3/a")
-    list_of_start_dates = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 col-sm-offset-20']/div[contains(text(), 'Опубликовано')]")
-    list_of_end_dates = browser.find_elements_by_xpath(
-        "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 col-sm-offset-20']/div[contains(text(), 'Истекает')]")
-    for i in range(len(list_of_names)):
-        size = len(list_of_tenders)
-        list_of_tenders.append(lot.Lot())
-        list_of_tenders[size].name = list_of_names[i].text
-        list_of_tenders[size].source_url = list_of_names[i].get_attribute('href')
-        list_of_tenders[size].number = get_number_from_url(list_of_tenders[size].source_url)
-        list_of_tenders[size].started_at = reformat_date(list_of_start_dates[i].text)
-        list_of_tenders[size].ended_at = reformat_date(list_of_end_dates[i].text)
+def parse_buyer_from_page(browser, buyer):
+    browser.get(buyer['link'])
+    info = browser.find_elements_by_xpath("//div[@class='row company-info']/div/*")
+    info = [i.text for i in info]
+    info = info[-1].replace('\n\n', '\n').split('\n')
+    info = [i.split(':') for i in info]
+    info = [i[-1].strip() for i in info]
+    for i in range(len(info)):
+        if info[i] == '':
+            info[i] = None
+    buyer['email'] = info[0]
+    buyer['phone'] = info[1]
+    buyer['fax'] = info[2]
+    buyer['site'] = info[3]
+    buyer['address'] = info[4]
+    buyer['country'] = info[5]
+    return buyer
 
 
-def parse_tender_lot(browser, current_tender, list_of_tenders):
+def open_and_parse_main_page_of_lots(browser, link, list_of_lots):
+    page_text = "?page="
+    page_count = 1
+    # parsing from each page until next page is empty
+    while True:
+        link_of_page = link + page_text + str(page_count)
+        browser.get(link_of_page)
+        # number_of_tenders = len(browser.find_elements_by_xpath("//div[@class='short-item col-sm-100']"))
+        list_of_names = browser.find_elements_by_xpath(
+            "//div[@class='short-item col-sm-100']/div[@class='col-md-70 col-sm-100']/h3/a")
+        list_of_start_dates = browser.find_elements_by_xpath(
+            "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
+            "col-sm-offset-20']/div[contains(text(), 'Опубликовано')]")
+        list_of_end_dates = browser.find_elements_by_xpath(
+            "//div[@class='short-item col-sm-100']/div[@class='dates col-md-30 col-md-offset-0 col-sm-40 "
+            "col-sm-offset-20']/div[contains(text(), 'Истекает')]")
+        if len(list_of_names) == 0:
+            break
+        for i in range(len(list_of_names)):
+            size = len(list_of_lots)
+            list_of_lots.append(lot.Lot())
+            list_of_lots[size].name = list_of_names[i].text.strip()
+            list_of_lots[size].source_url = list_of_names[i].get_attribute('href').strip()
+            list_of_lots[size].number = get_number_from_url(list_of_lots[size].source_url).strip()
+            list_of_lots[size].started_at = reformat_date(list_of_start_dates[i].text).strip()
+            list_of_lots[size].ended_at = reformat_date(list_of_end_dates[i].text).strip()
+        page_count += 1
+
+
+def parse_tender_lot(browser, current_tender):
     browser.get(current_tender.source_url)
     # giving time to process the redirect
     redirect_time = 1
@@ -65,32 +91,49 @@ def parse_tender_lot(browser, current_tender, list_of_tenders):
         time.sleep(2)
 
     get_category_country_subject(browser, current_tender)
-    try:
-        files = browser.find_elements_by_xpath(
-            "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']/div[@class='files']/a")
-        current_tender.attached_file = ""
-        for file in files:
-            current_tender.attached_file = current_tender.attached_file + file.get_attribute('href') + "; "
-        current_tender.attached_file = current_tender.attached_file[:-2]
-    except NoSuchElementException:
-        current_tender.attached_file = None
-    if current_tender.attached_file.replace(' ', '') == "":
-        current_tender.attached_file = None
-    get_info(browser, current_tender)
+    get_attached_files(browser, current_tender)
+    get_description(browser, current_tender)
+    get_email(browser, current_tender)
+    get_phone(browser, current_tender)
     current_tender.type = 'tender'
 
 
-def get_info(browser, current_tender):
-    get_description(browser, current_tender)
-    get_email(browser, current_tender)
+def get_description(browser, current_tender):
+    text = browser.find_elements_by_xpath("//div[@class='tender-full']/div[@class='tender_text_tab active']/div["
+                                          "@class='text']/*")
+    res = ""
+    for i in text:
+        if i.tag_name == 'p':
+            res += i.text
+        elif i.tag_name == 'table':
+            res += str(i.get_attribute("outerHTML"))
+        res += '\n'
+    current_tender.description_long = res
+    for i in text:
+        if i.tag_name == 'p':
+            current_tender.description_short = i.text
+            break
+
+
+def get_attached_files(browser, current_tender):
+    hrefs = browser.find_elements_by_xpath(
+        "//div[@class='content-wrapper']/div[@class='tender-full']/div[@class='tender_text_tab active']//a")
+    hrefs = [i.get_attribute('href') for i in hrefs]
+    hrefs = list(set(hrefs))
+    for i in range(len(hrefs) - 1, -1, -1):
+        if 'mailto' in hrefs[i] or '@' in hrefs[i]:
+            del hrefs[i]
+    if len(hrefs) == 0:
+        current_tender.attached_file = None
+    else:
+        hrefs = ' '.join(hrefs)
+        current_tender.attached_file = hrefs
 
 
 def get_email(browser, current_tender):
     text = browser.find_element_by_xpath("//div[@class='content-wrapper']/div[@class='tender-full']").text
-    # print('text: \n', text, "\n\n\n")
     temp_for_split = text.split('@')
     temp_for_email = ''
-    temp_for_letters = ''
     if len(temp_for_split) > 1:
         temp_for_letters = temp_for_split[0]
         for i in range(len(temp_for_letters)):
@@ -111,60 +154,67 @@ def get_email(browser, current_tender):
         if temp_for_email[-1] == '.':
             temp_for_email = temp_for_email[:-1]
         temp_for_split.clear()
-        current_tender.email2 = temp_for_email
+        current_tender.email2 = temp_for_email.strip()
 
 
-def get_description(browser, current_tender):
-    text = browser.find_elements_by_xpath("//div[@class='tender-full']/div[@class='tender_text_tab active']/div["
-                                          "@class='text']/*")
-    res = ""
-    for i in text:
-        if i.tag_name == 'p':
-            res += i.text
-        elif i.tag_name == 'table':
-            res += str(i.get_attribute("outerHTML"))
-        res += '\n'
-
-    current_tender.description_long = res
-    if len(res) >= 900:
-        current_tender.description_short = to_cut_string(res, 900)
+def get_phone(browser, current_tender):
+    text = browser.find_element_by_xpath("//div[@class='content-wrapper']/div[@class='tender-full']").text
+    numbers = []
+    char = " +-()\n"
+    for i in char:
+        text = text.replace(i, "")
+    text = list(text)
+    cnt = 0
+    number = ""
+    for symbol in text:
+        if symbol.isdecimal():
+            cnt += 1
+            number += symbol
+        elif not symbol.isdecimal() and (cnt == 12 or (cnt == 9 and (number[0] == 9 or number[0] == 7))):
+            numbers.append(number)
+            cnt = 0
+            number = ""
+        else:
+            cnt = 0
+            number = ""
+    if len(numbers) > 0:
+        current_tender.phone2 = numbers[0].strip()
     else:
-        current_tender.description_short = res
-    temp_for_phone = None
-    for i in text:
-        if i.tag_name == 'p':
-            if "тел." in i.text.lower() or "тел:" in i.text.lower() or "телефон" in i.text.lower():
-                temp_for_phone = i.text.lower()
-                # print(current_tender.source_url, "\n", temp_for_phone)
-                break
-    if temp_for_phone is not None:
-        temp_for_phone_split = 0
-        if "тел." in temp_for_phone:
-            temp_for_phone_split = temp_for_phone.split("тел.")
-        elif "тел:" in temp_for_phone:
-            temp_for_phone_split = temp_for_phone.split("тел:")
-        elif "телефон" in temp_for_phone:
-            temp_for_phone_split = temp_for_phone.split("телефон")
-        if len(temp_for_phone_split) > 1:
-            temp_for_phone = temp_for_phone_split[1]
-            temp_for_phone = temp_for_phone.replace('\n', '')
-            replace_values = 'abcdefghijklmnopqrstuvwxyzабвгдеёжзийклмнопрстуфхцчшщъыьэюя.,;:/@'
-            for value in replace_values:
-                temp_for_phone = temp_for_phone.replace(value, '')
-            while "  " in temp_for_phone:
-                temp_for_phone = temp_for_phone.replace("  ", " ")
-            digits = "0123456789"
-            temp_for_phone = list(temp_for_phone)
-            for i in range(len(temp_for_phone) - 1, -1, -1):
-                if temp_for_phone[i] in digits:
+        text = browser.find_elements_by_xpath("//div[@class='tender-full']/div[@class='tender_text_tab active']/div["
+                                              "@class='text']/*")
+        temp_for_phone = None
+        for i in text:
+            if i.tag_name == 'p':
+                if "тел." in i.text.lower() or "тел:" in i.text.lower() or "телефон" in i.text.lower():
+                    temp_for_phone = i.text.lower()
                     break
-                else:
-                    del temp_for_phone[i]
-            temp_for_phone = "".join(temp_for_phone)
-            temp_for_phone = temp_for_phone.replace(" ", "", 1)
-            temp_for_phone = (temp_for_phone, None)[temp_for_phone == ""]
-    print(current_tender.source_url, temp_for_phone, sep="\n")
-    current_tender.phone2 = temp_for_phone
+        if temp_for_phone is not None:
+            temp_for_phone_split = 0
+            if "тел." in temp_for_phone:
+                temp_for_phone_split = temp_for_phone.split("тел.")
+            elif "тел:" in temp_for_phone:
+                temp_for_phone_split = temp_for_phone.split("тел:")
+            elif "телефон" in temp_for_phone:
+                temp_for_phone_split = temp_for_phone.split("телефон")
+            if len(temp_for_phone_split) > 1:
+                temp_for_phone = temp_for_phone_split[1]
+                temp_for_phone = temp_for_phone.replace('\n', '')
+                replace_values = 'abcdefghijklmnopqrstuvwxyzабвгдеёжзийклмнопрстуфхцчшщъыьэюя.,;:/@'
+                for value in replace_values:
+                    temp_for_phone = temp_for_phone.replace(value, '')
+                while "  " in temp_for_phone:
+                    temp_for_phone = temp_for_phone.replace("  ", " ")
+                digits = "0123456789"
+                temp_for_phone = list(temp_for_phone)
+                for i in range(len(temp_for_phone) - 1, -1, -1):
+                    if temp_for_phone[i] in digits:
+                        break
+                    else:
+                        del temp_for_phone[i]
+                temp_for_phone = "".join(temp_for_phone)
+                temp_for_phone = temp_for_phone.replace(" ", "", 1)
+                temp_for_phone = (temp_for_phone, None)[temp_for_phone == ""]
+        current_tender.phone2 = temp_for_phone
 
 
 def get_category_country_subject(browser, current_tender):
@@ -174,11 +224,11 @@ def get_category_country_subject(browser, current_tender):
     for i in range(len(list_for_info)):
         if i != len(list_for_info) - 1:
             if "Категория" in list_for_info[i]:
-                current_tender.category = list_for_info[i + 1]
+                current_tender.category = list_for_info[i + 1].strip()
             if "Закупщик" in list_for_info[i]:
-                current_tender.subject = list_for_info[i + 1]
+                current_tender.subject = list_for_info[i + 1].strip()
             if "Страна" in list_for_info[i]:
-                current_tender.country = list_for_info[i + 1]
+                current_tender.country = list_for_info[i + 1].strip()
     list_for_info.clear()
 
 
@@ -214,6 +264,16 @@ def reformat_date(date):
     return date
 
 
+def merge_lots_and_buyers(list_of_lots, list_of_buyers):
+    for i in range(len(list_of_lots)):
+        for buyer in list_of_buyers:
+            if list_of_lots[i].subject == buyer['name']:
+                list_of_lots[i].phone = buyer['phone']
+                list_of_lots[i].email = buyer['email']
+                list_of_lots[i].website = buyer['site']
+                list_of_lots[i].subject_address = buyer['address']
+
+
 def print_lots(list_of_tenders):
     temp_count_for_print = 1
     for tender in list_of_tenders:
@@ -221,11 +281,10 @@ def print_lots(list_of_tenders):
               "\n  source_url\n   ", tender.source_url, "\n  started_at\n   ", tender.started_at, "\n  ended_at\n   ",
               tender.ended_at, "\n  category\n   ", tender.category, "\n  country\n   ", tender.country,
               "\n  subject\n   ", tender.subject, "\n  attached_file\n   ", tender.attached_file,
-              "\n  description_short\n   ", tender.description_short, "\n  email2\n   ", tender.email2,
-              # "\n  number\n   ", tender.number,
-              # "\n  number\n   ", tender.number,
-              # "\n  number\n   ", tender.number,
-              # "\n  number\n   ", tender.number,
+              "\n  description_short\n   ", tender.description_short, "\n  email\n   ", tender.email, "\n  email2\n   ",
+              tender.email2, "\n  phone\n   ", tender.phone, "\n  phone2\n   ", tender.phone2, "\n  site\n   ",
+              tender.website, "\n  address\n   ", tender.subject_address,
+
               # "\n  number\n   ", tender.number,
               "\n ============================\n")
         temp_count_for_print += 1
